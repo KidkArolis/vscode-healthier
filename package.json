@@ -1,0 +1,84 @@
+{
+	"name": "vscode-healthier",
+	"displayName": "Healthier Linter",
+	"version": "0.0.0",
+	"description": "Healthier is an opinionated code linter – a friendly companion to Prettier",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/KidkArolis/vscode-healthier"
+	},
+	"bugs": {
+		"url": "https://github.com/KidkArolis/vscode-healthier/issues"
+	},
+	"author": {
+		"name": "Karolis Narkevicius",
+		"email": "karolis.n@gmail.com",
+		"url": "https://github.com/KidkArolis"
+	},
+	"icon": "icon.png",
+	"categories": [
+		"Linters"
+	],
+	"engines": {
+		"vscode": "^1.22.0"
+	},
+	"activationEvents": [
+		"onLanguage:javascript",
+		"onLanguage:javascriptreact",
+		"onLanguage:typescript",
+		"onLanguage:typescriptreact",
+		"onCommand:healthier.fix"
+	],
+	"main": "./client/out/extension",
+	"contributes": {
+		"configuration": {
+			"type": "object",
+			"title": "Healthier configuration",
+			"properties": {
+				"healthier.enable": {
+					"type": "boolean",
+					"default": false,
+					"description": "Control whether Healthier is enabled or not."
+				},
+				"healthier.options": {
+					"type": "object",
+					"default": {},
+					"description": "The Healthier options object to provide args to the Healthier command."
+				},
+				"healthier.format.enable": {
+					"scope": "resource",
+					"type": "boolean",
+					"default": false,
+					"description": "Enable 'healthier --fix' as formatter, which formats code using Prettier"
+				}
+			}
+		},
+		"commands": [
+			{
+				"title": "Format code using Prettier",
+				"category": "Healthier",
+				"command": "healthier.fix"
+			}
+		]
+	},
+	"scripts": {
+		"test": "npm run lint && npm run compile",
+		"lint": "npm run lint:server && npm run lint:client",
+		"compile": "npm run compile:client && npm run compile:server",
+		"vscode:prepublish": "cd client && npm run update-vscode && cd .. && npm run compile",
+		"compile:client": "tsc -p ./client/tsconfig.json",
+		"compile:server": "tsc -p ./server/tsconfig.json",
+		"watch:client": "tsc -w -p ./client/tsconfig.json",
+		"watch:server": "tsc -w -p ./server/tsconfig.json",
+		"lint:client": "tslint -p client --format stylish",
+		"lint:server": "tslint -p server --format stylish",
+		"postinstall": "cd client && npm install && cd ../server && npm install && cd .."
+	},
+	"devDependencies": {
+		"@types/node": "^8.10.18",
+		"tslint": "^5.11.0",
+		"tslint-xo": "^0.12.0",
+		"typescript": "^3.1.3"
+	}
+}
