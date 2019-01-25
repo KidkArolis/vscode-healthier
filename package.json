@@ -16,6 +16,7 @@
 		"email": "karolis.n@gmail.com",
 		"url": "https://github.com/KidkArolis"
 	},
+	"publisher": "KidkArolis",
 	"icon": "icon.png",
 	"categories": [
 		"Linters"
