@@ -1,7 +1,7 @@
 {
 	"name": "vscode-healthier",
 	"displayName": "Healthier Linter",
-	"version": "0.0.0",
+	"version": "1.0.0",
 	"description": "Healthier is an opinionated code linter – a friendly companion to Prettier",
 	"license": "MIT",
 	"repository": {
