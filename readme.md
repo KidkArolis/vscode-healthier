@@ -12,29 +12,31 @@ $ npm install --save-dev healthier
 
 In Visual Studio Code, press <kbd>Cmd+Shift+P</kbd> and narrow down the list of commands by typing `extension`. Pick `Extensions: Install Extension`.
 
-Search for the `healthier` extension from the list and install it.
+Search for the `healthier` extension in the list and install it.
 
-## Format code using Prettier
-
-Press `Cmd+Shift+P` and choose `Healthier: Format code using Prettier`
-
-While this setting is available, the recommended approach is to keep it turned off and use the Prettier extension for formatting your code.
+**Note**: The extension will only lint your code using your locally installed Healthier package. This means you can keep the extension always enabled and it won't interfere in projects where Healthier is not used.
 
 ## Settings
 
-Enable the linter in the VS Code Settings.
+This extension contributes the following variables to the settings.
 
-```json
-{
-	"healthier.enable": true
-}
-```
+- `healthier.enable`: enable/disable Healthier. It is enabled by default.
+- `healthier.provideLintTask`: whether the extension contributes a lint task to lint a whole workspace folder.
+- `healthier.run` - run the linter `onSave` or `onType`, default is `onType`.
+- `healthier.runtime` - use this setting to set the path of the node runtime to run ESLint under.
+- `healthier.validate` - an array of language identifiers specify the files to be validated. Something like `"healthier.validate": [ "javascript", "javascriptreact", "html" ]`. Defaults to `["javascript", "javascriptreact"]`.
 
-You can enable the formatter integration to use `healthier --fix` as formatter. Requires `healthier.enable` to be true. It is disabled by default.
+## Commands:
 
-```json
-{
-	"healthier.enable": true,
-	"healthier.format.enable": true
-}
-```
+This extension contributes the following commands to the Command palette.
+
+- `Disable Healthier for this Workspace`: disables Healthier extension for this workspace.
+- `Enable Healthier for this Workspace`: enable Healthier extension for this workspace.
+
+## Development
+
+- run npm install
+- open VS Code
+- Run the `watch` task to compile the client and server
+- To run/debug the extension use the `Launch Extension` launch configuration
+- to debug the server use the `Attach to Server` launch configuration

@@ -1,5 +1,6 @@
 {
-	"rules": {
-		"no-namespace": false
-	}
+  "rules": {
+    "indent": [true, "spaces"],
+    "semicolon": [true, "always"]
+  }
 }

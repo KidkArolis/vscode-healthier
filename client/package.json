@@ -1,15 +1,27 @@
 {
-  "engines": {
-    "vscode": "^1.26.0"
-  },
-  "scripts": {
-    "update-vscode": "node ./node_modules/vscode/bin/install",
-    "postinstall": "npm run update-vscode"
-  },
-  "dependencies": {
-    "vscode-languageclient": "^5.1.1"
-  },
-  "devDependencies": {
-    "vscode": "^1.1.21"
-  }
+	"name": "healthier-client",
+	"displayName": "Heathier",
+	"description": "Integrates Healthier into VS Code.",
+	"version": "1.0.0",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/KidkArolis/vscode-healthier.git"
+	},
+	"bugs": {
+		"url": "https://github.com/KidkArolis/vscode-healthier/issues"
+	},
+	"engines": {
+		"vscode": "^1.30.0"
+	},
+	"scripts": {
+		"update-vscode": "node ./node_modules/vscode/bin/install",
+		"postinstall": "node ./node_modules/vscode/bin/install"
+	},
+	"devDependencies": {
+		"vscode": "^1.1.17"
+	},
+	"dependencies": {
+		"vscode-languageclient": "5.2.1"
+	}
 }
