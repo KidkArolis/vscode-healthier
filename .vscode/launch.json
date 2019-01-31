@@ -1,4 +1,3 @@
-
 // A launch configuration that compiles the extension and then opens it inside a new window
 {
 	"version": "0.2.0",
@@ -6,13 +5,13 @@
 		{
 			"type": "extensionHost",
 			"request": "launch",
-			"name": "Launch Extension",
+			"name": "Launch Client",
 			"runtimeExecutable": "${execPath}",
 			"args": ["--extensionDevelopmentPath=${workspaceFolder}" ],
 			"stopOnEntry": false,
 			"sourceMaps": true,
 			"outFiles": ["${workspaceFolder}/client/out/**/*.js"],
-			"preLaunchTask": "npm: watch:client"
+			"preLaunchTask": "npm: watch"
 		},
 		{
 			"type": "node",
@@ -20,9 +19,15 @@
 			"name": "Attach to Server",
 			"address": "localhost",
 			"protocol": "inspector",
-			"port": 6004,
+			"port": 6010,
 			"sourceMaps": true,
 			"outFiles": ["${workspaceFolder}/server/**/*.js"]
+		}
+	],
+	"compounds": [
+		{
+			"name": "Client + Server",
+			"configurations": ["Launch Client", "Attach to Server"]
 		}
 	]
 }

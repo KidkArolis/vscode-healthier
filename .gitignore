@@ -1,2 +1,4 @@
-node_modules
 out
+node_modules
+npm-debug.log
+*.vsix
