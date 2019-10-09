@@ -109,6 +109,7 @@ interface ESLintReport {
 }
 
 interface CLIOptions {
+  filename: string;
   cwd?: string;
 }
 
@@ -729,16 +730,16 @@ function validate(
   settings: TextDocumentSettings,
   publishDiagnostics: boolean = true
 ): void {
-  let newOptions: CLIOptions = Object.assign(Object.create(null));
   let content = document.getText();
   let uri = document.uri;
   let file = getFilePath(document);
   let cwd = process.cwd();
+  let cliOptions: CLIOptions = { filename: file };
 
   try {
     if (file) {
       if (settings.workingDirectory) {
-        newOptions.cwd = settings.workingDirectory.directory;
+        cliOptions.cwd = settings.workingDirectory.directory;
         if (settings.workingDirectory.changeProcessCWD) {
           process.chdir(settings.workingDirectory.directory);
         }
@@ -746,14 +747,14 @@ function validate(
         let workspaceFolderUri = URI.parse(settings.workspaceFolder.uri);
         if (workspaceFolderUri.scheme === "file") {
           const fsPath = getFileSystemPath(workspaceFolderUri);
-          newOptions.cwd = fsPath;
+          cliOptions.cwd = fsPath;
           process.chdir(fsPath);
         }
       } else if (!settings.workspaceFolder && !isUNC(file)) {
         let directory = path.dirname(file);
         if (directory) {
           if (path.isAbsolute(directory)) {
-            newOptions.cwd = directory;
+            cliOptions.cwd = directory;
           }
         }
       }
@@ -762,7 +763,7 @@ function validate(
     let cli = settings.library;
     // Clean previously computed code actions.
     codeActions.delete(uri);
-    let report: ESLintReport = cli.lintTextSync(content, { filename: file });
+    let report: ESLintReport = cli.lintTextSync(content, cliOptions);
     let diagnostics: Diagnostic[] = [];
     if (
       report &&
