@@ -24,7 +24,9 @@ This extension contributes the following variables to the settings.
 - `healthier.provideLintTask`: whether the extension contributes a lint task to lint a whole workspace folder.
 - `healthier.run` - run the linter `onSave` or `onType`, default is `onType`.
 - `healthier.runtime` - use this setting to set the path of the node runtime to run ESLint under.
-- `healthier.validate` - an array of language identifiers specify the files to be validated. Something like `"healthier.validate": [ "javascript", "javascriptreact", "html" ]`. Defaults to `["javascript", "javascriptreact"]`.
+- `healthier.validate` - an array of language identifiers specify the files to be validated. Something like `"healthier.validate": [ "javascript", "javascriptreact", "html", "typescript" ]`. Defaults to `["javascript", "javascriptreact"]`.
+
+**Note:** For TypeScript support, add `"typescript"` to the `healthier.validate` setting as shown above and see: [healthier#typescript](https://github.com/KidkArolis/healthier#typescript)
 
 ## Commands:
 
