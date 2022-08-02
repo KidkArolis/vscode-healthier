@@ -6,10 +6,13 @@
 
 import {
   createConnection,
-  IConnection,
+  Connection,
+  IPCMessageReader,
+  IPCMessageWriter,
   ResponseError,
   RequestType,
   NotificationType,
+  ProposedFeatures,
   ErrorCodes,
   RequestHandler,
   NotificationHandler,
@@ -18,15 +21,14 @@ import {
   Files,
   CancellationToken,
   TextDocuments,
-  TextDocument,
   TextDocumentSyncKind,
   DidChangeWatchedFilesNotification,
   DidChangeConfigurationNotification,
   WorkspaceFolder,
   DidChangeWorkspaceFoldersNotification
-} from "vscode-languageserver";
-
-import URI from "vscode-uri";
+} from "vscode-languageserver/node";
+import { TextDocument } from 'vscode-languageserver-textdocument'
+import { URI } from 'vscode-uri'
 import * as path from "path";
 
 namespace Is {
@@ -52,7 +54,7 @@ interface StatusParams {
 }
 
 namespace StatusNotification {
-  export const type = new NotificationType<StatusParams, void>(
+  export const type = new NotificationType<StatusParams>(
     "healthier/status"
   );
 }
@@ -114,7 +116,7 @@ interface CLIOptions {
 }
 
 interface CLIEngine {
-  lintTextSync(content: string, opts?: any): ESLintReport;
+  lintText(content: string, opts?: any): Promise<ESLintReport>;
 }
 
 function makeDiagnostic(problem: ESLintProblem): Diagnostic {
@@ -237,7 +239,7 @@ function getFilePath(documentOrUri: string | TextDocument): string {
   return getFileSystemPath(uri);
 }
 
-const exitCalled = new NotificationType<[number, string], void>(
+const exitCalled = new NotificationType<[number, string]>(
   "healthier/exitCalled"
 );
 
@@ -273,22 +275,25 @@ process.on("uncaughtException", (error: any) => {
   }
 });
 
-let connection = createConnection();
+let connection = createConnection(ProposedFeatures.all,
+  new IPCMessageReader(process),
+  new IPCMessageWriter(process));
 connection.console.info(`Healthier server running in node ${process.version}`);
-let documents: TextDocuments = new TextDocuments();
+const documents = new TextDocuments(TextDocument);
+// const documents = new TextDocuments(TextDocument)
 let path2Library: Map<string, CLIEngine> = new Map<string, CLIEngine>();
-let document2Settings: Map<string, Thenable<TextDocumentSettings>> = new Map<
+let document2Settings: Map<string, Promise<TextDocumentSettings>> = new Map<
   string,
-  Thenable<TextDocumentSettings>
+  Promise<TextDocumentSettings>
 >();
 
-function resolveSettings(
+async function resolveSettings(
   document: TextDocument
-): Thenable<TextDocumentSettings> {
+): Promise<TextDocumentSettings> {
   let uri = document.uri;
-  let resultPromise = document2Settings.get(uri);
-  if (resultPromise) {
-    return resultPromise;
+  let resultPromise = document2Settings.get(uri)
+  if (resultPromise != null) {
+    return await resultPromise
   }
   resultPromise = connection.workspace
     .getConfiguration({ scopeUri: uri, section: "" })
@@ -391,16 +396,17 @@ class BufferedMessageQueue {
       versionProvider?: VersionProvider<any>;
     }
   >;
-  private timer: NodeJS.Timer | undefined;
 
-  constructor(private connection: IConnection) {
+  private timer: NodeJS.Immediate | undefined
+
+  constructor(private connection: Connection) {
     this.queue = [];
     this.requestHandlers = new Map();
     this.notificationHandlers = new Map();
   }
 
-  public registerRequest<P, R, E, RO>(
-    type: RequestType<P, R, E, RO>,
+  public registerRequest<P, R, E>(
+    type: RequestType<P, R, E>,
     handler: RequestHandler<P, R, E>,
     versionProvider?: VersionProvider<P>
   ): void {
@@ -422,8 +428,8 @@ class BufferedMessageQueue {
     this.requestHandlers.set(type.method, { handler, versionProvider });
   }
 
-  public registerNotification<P, RO>(
-    type: NotificationType<P, RO>,
+  public registerNotification<P>(
+    type: NotificationType<P>,
     handler: NotificationHandler<P>,
     versionProvider?: (params: P) => number
   ): void {
@@ -438,8 +444,8 @@ class BufferedMessageQueue {
     this.notificationHandlers.set(type.method, { handler, versionProvider });
   }
 
-  public addNotificationMessage<P, RO>(
-    type: NotificationType<P, RO>,
+  public addNotificationMessage<P>(
+    type: NotificationType<P>,
     params: P,
     version: number
   ) {
@@ -451,22 +457,22 @@ class BufferedMessageQueue {
     this.trigger();
   }
 
-  public onNotification<P, RO>(
-    type: NotificationType<P, RO>,
+  public onNotification<P>(
+    type: NotificationType<P>,
     handler: NotificationHandler<P>,
     versionProvider?: (params: P) => number
   ): void {
     this.notificationHandlers.set(type.method, { handler, versionProvider });
   }
 
-  private trigger(): void {
-    if (this.timer || this.queue.length === 0) {
-      return;
+  private trigger (): void {
+    if (this.timer != null || this.queue.length === 0) {
+      return
     }
     this.timer = setImmediate(() => {
-      this.timer = undefined;
-      this.processQueue();
-    });
+      this.timer = undefined
+      this.processQueue()
+    })
   }
 
   private processQueue(): void {
@@ -479,7 +485,7 @@ class BufferedMessageQueue {
       if (requestMessage.token.isCancellationRequested) {
         requestMessage.reject(
           new ResponseError(
-            ErrorCodes.RequestCancelled,
+            ErrorCodes.InvalidRequest,
             "Request got cancelled"
           )
         );
@@ -494,7 +500,7 @@ class BufferedMessageQueue {
       ) {
         requestMessage.reject(
           new ResponseError(
-            ErrorCodes.RequestCancelled,
+            ErrorCodes.InvalidRequest,
             "Request got cancelled"
           )
         );
@@ -534,15 +540,14 @@ let messageQueue: BufferedMessageQueue = new BufferedMessageQueue(connection);
 
 namespace ValidateNotification {
   export const type: NotificationType<
-    TextDocument,
-    void
-  > = new NotificationType<TextDocument, void>("healthier/validate");
+    TextDocument
+  > = new NotificationType<TextDocument>("healthier/validate");
 }
 
 messageQueue.onNotification(
   ValidateNotification.type,
-  document => {
-    validateSingle(document, true);
+  async document => {
+    await validateSingle(document, true);
   },
   (document): number => {
     return document.version;
@@ -552,8 +557,8 @@ messageQueue.onNotification(
 // The documents manager listen for text document create, change
 // and close on the connection
 documents.listen(connection);
-documents.onDidOpen(event => {
-  resolveSettings(event.document).then(settings => {
+documents.onDidOpen(async event => {
+  await resolveSettings(event.document).then(settings => {
     if (!settings.validate) {
       return;
     }
@@ -568,8 +573,8 @@ documents.onDidOpen(event => {
 });
 
 // A text document has changed. Validate the document according the run setting.
-documents.onDidChangeContent(event => {
-  resolveSettings(event.document).then(settings => {
+documents.onDidChangeContent(async event => {
+  await resolveSettings(event.document).then(settings => {
     if (!settings.validate || settings.run !== "onType") {
       return;
     }
@@ -582,8 +587,8 @@ documents.onDidChangeContent(event => {
 });
 
 // A text document has been saved. Validate the document according the run setting.
-documents.onDidSave(event => {
-  resolveSettings(event.document).then(settings => {
+documents.onDidSave(async event => {
+  await resolveSettings(event.document).then(settings => {
     if (!settings.validate || settings.run !== "onSave") {
       return;
     }
@@ -595,13 +600,13 @@ documents.onDidSave(event => {
   });
 });
 
-documents.onDidClose(event => {
-  resolveSettings(event.document).then(settings => {
+documents.onDidClose(async event => {
+  await resolveSettings(event.document).then(async settings => {
     let uri = event.document.uri;
     document2Settings.delete(uri);
     codeActions.delete(uri);
     if (settings.validate) {
-      connection.sendDiagnostics({ uri: uri, diagnostics: [] });
+      await connection.sendDiagnostics({ uri: uri, diagnostics: [] });
     }
   });
 });
@@ -636,12 +641,12 @@ connection.onInitialize(_params => {
   };
 });
 
-connection.onInitialized(() => {
-  connection.client.register(
+connection.onInitialized(async () => {
+  await connection.client.register(
     DidChangeConfigurationNotification.type,
     undefined
   );
-  connection.client.register(
+  await connection.client.register(
     DidChangeWorkspaceFoldersNotification.type,
     undefined
   );
@@ -676,13 +681,13 @@ function validateSingle(
   if (!documents.get(document.uri)) {
     return Promise.resolve(undefined);
   }
-  return resolveSettings(document).then(settings => {
+  return resolveSettings(document).then(async settings => {
     if (!settings.validate) {
       return;
     }
     try {
       validate(document, settings, publishDiagnostics);
-      connection.sendNotification(StatusNotification.type, {
+      await connection.sendNotification(StatusNotification.type, {
         state: Status.ok
       });
     } catch (err) {
@@ -694,7 +699,7 @@ function validateSingle(
         }
       }
       status = status || Status.error;
-      connection.sendNotification(StatusNotification.type, { state: status });
+      await connection.sendNotification(StatusNotification.type, { state: status });
     }
   });
 }
@@ -725,11 +730,11 @@ function getMessage(err: any, document: TextDocument): string {
   return result;
 }
 
-function validate(
+async function validate(
   document: TextDocument,
   settings: TextDocumentSettings,
   publishDiagnostics: boolean = true
-): void {
+): Promise<void> {
   let content = document.getText();
   let uri = document.uri;
   let file = getFilePath(document);
@@ -763,7 +768,7 @@ function validate(
     let cli = settings.library;
     // Clean previously computed code actions.
     codeActions.delete(uri);
-    let report: ESLintReport = cli.lintTextSync(content, cliOptions);
+    let report: ESLintReport = await cli.lintText(content, cliOptions);
     let diagnostics: Diagnostic[] = [];
     if (
       report &&
@@ -782,7 +787,7 @@ function validate(
       }
     }
     if (publishDiagnostics) {
-      connection.sendDiagnostics({ uri, diagnostics });
+      await connection.sendDiagnostics({ uri, diagnostics });
     }
   } finally {
     if (cwd !== process.cwd()) {
@@ -851,10 +856,10 @@ function showErrorMessage(error: any, document: TextDocument): Status {
 
 messageQueue.registerNotification(
   DidChangeWatchedFilesNotification.type,
-  params => {
+  async (params: any) => {
     // A .eslintrc has change. No smartness here.
     // Simply revalidate all files.
-    params.changes.forEach(change => {
+    for (const change of params.changes) {
       let fsPath = getFilePath(change.uri);
       if (!fsPath || isUNC(fsPath)) {
         return;
@@ -865,14 +870,14 @@ messageQueue.registerNotification(
         if (library) {
           let cli = library;
           try {
-            cli.lintTextSync("", {
+            await cli.lintText("", {
               filename: path.join(dirname, "___test___.js")
             });
             configErrorReported.delete(fsPath);
           } catch (error) {}
         }
       }
-    });
+    }
     validateMany(documents.all());
   }
 );
