@@ -30,8 +30,9 @@ import {
   TransportKind,
   NotificationType,
   ErrorHandler,
-  ErrorAction,
+  ErrorHandlerResult,
   CloseAction,
+  CloseHandlerResult,
   State as ClientState,
   RevealOutputChannelOn,
   ServerOptions,
@@ -39,7 +40,7 @@ import {
   DidCloseTextDocumentNotification,
   DidOpenTextDocumentNotification,
   WorkspaceFolder
-} from "vscode-languageclient";
+} from "vscode-languageclient/node";
 
 import { TaskProvider } from "./tasks";
 
@@ -105,7 +106,7 @@ interface StatusParams {
 }
 
 namespace StatusNotification {
-  export const type = new NotificationType<StatusParams, void>(
+  export const type = new NotificationType<StatusParams>(
     "healthier/status"
   );
 }
@@ -120,12 +121,11 @@ namespace OpenESLintDocRequest {
   export const type = new RequestType<
     OpenESLintDocParams,
     OpenESLintDocResult,
-    void,
     void
   >("healthier/openDoc");
 }
 
-const exitCalled = new NotificationType<[number, string], void>(
+const exitCalled = new NotificationType<[number, string]>(
   "healthier/exitCalled"
 );
 
@@ -421,36 +421,37 @@ export function realActivate(context: ExtensionContext) {
       return false;
     },
     errorHandler: {
-      error: (error, message, count): ErrorAction => {
-        return defaultErrorHandler.error(error, message, count);
+      error: (error, message, count): ErrorHandlerResult => {
+        return defaultErrorHandler?.error(error, message, count) as ErrorHandlerResult
       },
-      closed: (): CloseAction => {
+      closed: (): CloseHandlerResult => {
         if (serverCalledProcessExit) {
-          return CloseAction.DoNotRestart;
+          return {
+            action: CloseAction.DoNotRestart
+          }
         }
-        return defaultErrorHandler.closed();
+        return defaultErrorHandler?.closed() as CloseHandlerResult
       }
     },
     middleware: {
-      didOpen: (document, next) => {
+      didOpen: async (document, next) => {
         if (
           Languages.match(packageJsonFilter, document) ||
           Languages.match(configFileFilter, document) ||
           shouldBeValidated(document)
         ) {
-          next(document);
+          await next(document);
           syncedDocuments.set(document.uri.toString(), document);
-          return;
         }
       },
-      didChange: (event, next) => {
+      didChange: async (event, next) => {
         if (syncedDocuments.has(event.document.uri.toString())) {
-          next(event);
+          await next(event)
         }
       },
-      willSave: (event, next) => {
+      willSave: async (event, next) => {
         if (syncedDocuments.has(event.document.uri.toString())) {
-          next(event);
+          await next(event)
         }
       },
       willSaveWaitUntil: (event, next) => {
@@ -460,16 +461,16 @@ export function realActivate(context: ExtensionContext) {
           return Promise.resolve([]);
         }
       },
-      didSave: (document, next) => {
+      didSave: async (document, next) => {
         if (syncedDocuments.has(document.uri.toString())) {
-          next(document);
+          await next(document)
         }
       },
-      didClose: (document, next) => {
-        let uri = document.uri.toString();
+      didClose: async (document, next) => {
+        const uri = document.uri.toString()
         if (syncedDocuments.has(uri)) {
-          syncedDocuments.delete(uri);
-          next(document);
+          syncedDocuments.delete(uri)
+          await next(document)
         }
       },
       provideCodeActions: (
@@ -495,9 +496,9 @@ export function realActivate(context: ExtensionContext) {
         if (eslintDiagnostics.length === 0) {
           return [];
         }
-        let newContext: CodeActionContext = Object.assign({}, context, {
+        const newContext: CodeActionContext = Object.assign({}, context, {
           diagnostics: eslintDiagnostics
-        } as CodeActionContext);
+        });
         return next(document, range, newContext, token);
       },
       workspace: {
@@ -576,7 +577,7 @@ export function realActivate(context: ExtensionContext) {
     }
     updateStatusBarVisibility();
   });
-  client.onReady().then(() => {
+  client.start().then(() => {
     client.onNotification(StatusNotification.type, params => {
       updateStatus(params.state);
     });
@@ -608,7 +609,6 @@ export function realActivate(context: ExtensionContext) {
   updateStatusBarVisibility();
 
   context.subscriptions.push(
-    client.start(),
     Commands.registerCommand("healthier.showOutputChannel", () => {
       client.outputChannel.show();
     }),

@@ -26,7 +26,7 @@
 		"multi-root ready"
 	],
 	"engines": {
-		"vscode": "^1.50.0",
+		"vscode": "^1.69.0",
 		"npm": ">=7.0.0"
 	},
 	"activationEvents": [
@@ -175,7 +175,7 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "cd client && npm run update-vscode && cd .. && npm run compile",
+		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -b",
 		"compile:client": "tsc -b ./client/tsconfig.json",
 		"compile:server": "tsc -b ./server/tsconfig.json",
