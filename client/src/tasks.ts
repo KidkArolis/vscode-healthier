@@ -101,8 +101,8 @@ export class TaskProvider {
   }
 
   private updateWorkspaceFolders(
-    added: vscode.WorkspaceFolder[],
-    removed: vscode.WorkspaceFolder[]
+    added: readonly vscode.WorkspaceFolder[],
+    removed: readonly vscode.WorkspaceFolder[]
   ): void {
     for (let remove of removed) {
       let provider = this.providers.get(remove.uri.toString());
