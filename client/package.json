@@ -15,10 +15,25 @@
 		"vscode": "^1.69.0",
 		"npm": ">=7.0.0"
 	},
-	"dependencies": {
-		"vscode-languageclient": "^8.0.2"
-	},
-	"devDependencies": {
-		"@types/vscode": "^1.69.0"
-	}
+	"ts-standard": {
+    "files": [
+      "./src/**/*.ts"
+    ],
+    "envs": [
+      "node"
+    ]
+  },
+  "scripts": {
+    "lint": "ts-standard"
+  },
+  "devDependencies": {
+    "@types/glob": "^7.2.0",
+    "vscode-languageclient": "^8.0.2",
+    "vscode-nls": "^5.0.1"
+  },
+  "dependencies": {
+    "@types/vscode": "^1.69.0",
+    "ts-standard": "file:../node_modules/ts-standard",
+    "vscode-uri": "^3.0.3"
+  }
 }
