@@ -24,16 +24,13 @@ import {
   DocumentFilter,
   ErrorHandler,
   ErrorHandlerResult,
-  ExecuteCommandParams,
-  ExecuteCommandRequest,
   LanguageClient,
   LanguageClientOptions,
   NotificationType,
   RevealOutputChannelOn,
   ServerOptions,
   State as ClientState,
-  TransportKind,
-  VersionedTextDocumentIdentifier
+  TransportKind
 } from 'vscode-languageclient/node'
 import { URI } from 'vscode-uri'
 

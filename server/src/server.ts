@@ -20,7 +20,7 @@ import {
   RequestType,
   ResponseError,
   TextDocuments,
-  TextDocumentSyncKind,
+  TextDocumentSyncKind
 } from 'vscode-languageserver/node'
 import {
   CancellationToken
@@ -149,13 +149,6 @@ function makeDiagnostic (
     },
     code: problem.ruleId
   }
-}
-
-function computeKey (diagnostic: Diagnostic): string {
-  const range = diagnostic.range
-  return `[${range.start.line},${range.start.character},${range.end.line},${
-    range.end.character
-  }]-${diagnostic.code as string | number}`
 }
 
 function convertSeverity (severity: number): DiagnosticSeverity {
@@ -736,16 +729,6 @@ function validateSingle (
   })
 }
 
-function validateMany (documents: TextDocument[]): void {
-  documents.forEach(document => {
-    messageQueue.addNotificationMessage(
-      ValidateNotification.type,
-      document,
-      document.version
-    )
-  })
-}
-
 function getMessage (err: any, document: TextDocument): string {
   let result: string | null = null
   if (typeof err.message === 'string' || err.message instanceof String) {
@@ -912,7 +895,7 @@ function validate (
   } catch {}
 }
 
-let noConfigReported: Map<string, HealthierModule | undefined> = new Map<
+const noConfigReported: Map<string, HealthierModule | undefined> = new Map<
 string,
 HealthierModule
 >()
@@ -994,7 +977,7 @@ function tryHandleConfigError (
   return undefined
 }
 
-let missingModuleReported: Map<string, HealthierModule> = new Map<
+const missingModuleReported: Map<string, HealthierModule> = new Map<
 string,
 HealthierModule
 >()
