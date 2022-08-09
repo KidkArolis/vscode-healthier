@@ -981,7 +981,7 @@ function validate (
             })
           }
         },
-        async function (report: HealthierReport | HealthierDocumentReport[], callback: any) {
+        function (report: HealthierReport | HealthierDocumentReport[], callback: any) {
           const diagnostics: Diagnostic[] = []
           if (report != null) {
             const results = Array.isArray(report) ? report : report.results
@@ -1008,12 +1008,13 @@ function validate (
           }
 
           if (publishDiagnostics) {
-            await connection.sendDiagnostics({ uri, diagnostics })
+            connection.sendDiagnostics({ uri, diagnostics }).then(() => callback(null)).catch(callback)
+          } else {
+            callback(null)
           }
-          callback(null)
         }
       ],
-      function (err: any, _results: any) {
+      function (err: any) {
         if (cwd !== process.cwd()) {
           process.chdir(cwd)
         }
