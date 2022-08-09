@@ -1,9 +1,9 @@
 {
   "name": "fixture",
   "scripts": {
-    "lint": "standard"
+    "lint": "healthier"
   },
   "devDependencies": {
-    "standard": "latest"
+    "healthier": "latest"
   }
 }

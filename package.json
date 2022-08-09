@@ -229,5 +229,11 @@
 	},
 	"dependencies": {
 		"async": "^3.2.4"
+	},
+	"__metadata": {
+		"id": "af00723d-248e-47a2-99ed-11aa0b6abc17",
+		"publisherDisplayName": "KidkArolis",
+		"publisherId": "fbac0424-3d99-4f1f-a061-d5c4b060a0bf",
+		"isPreReleaseVersion": false
 	}
 }

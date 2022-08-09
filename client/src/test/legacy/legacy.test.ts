@@ -8,18 +8,18 @@ test('legacy', async () => {
   await testDiagnostics(noLintErrorsUri, [])
   await testDiagnostics(lintErrorsUri, [
     {
-      message: 'Strings must use singlequote. (quotes)',
+      message: '\'a\' is assigned a value but never used. (no-unused-vars)',
       range: new vscode.Range(
-        new vscode.Position(0, 12),
-        new vscode.Position(0, 27)
+        new vscode.Position(0, 6),
+        new vscode.Position(0, 7)
       ),
       severity: vscode.DiagnosticSeverity.Error
     },
     {
-      message: 'Extra semicolon. (semi)',
+      message: '\'cnsole\' is not defined. (no-undef)',
       range: new vscode.Range(
-        new vscode.Position(0, 28),
-        new vscode.Position(0, 29)
+        new vscode.Position(0, 16),
+        new vscode.Position(0, 10)
       ),
       severity: vscode.DiagnosticSeverity.Error
     }

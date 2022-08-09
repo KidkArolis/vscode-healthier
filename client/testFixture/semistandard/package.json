@@ -1,9 +1,0 @@
-{
-  "name": "fixture",
-  "scripts": {
-    "lint": "semistandard"
-  },
-  "devDependencies": {
-    "semistandard": "latest"
-  }
-}
