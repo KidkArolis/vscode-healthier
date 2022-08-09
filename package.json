@@ -39,19 +39,24 @@
 	"contributes": {
 		"configuration": {
 			"type": "object",
-			"title": "JavaScript Healthier Style",
+			"title": "Healthier",
 			"properties": {
 				"healthier.enable": {
 					"scope": "resource",
 					"type": "boolean",
 					"default": true,
-					"description": "Controls whether JavaScript Healthier Style is enabled for JavaScript files or not."
+					"description": "Controls whether Healthier is enabled for JavaScript files or not."
 				},
 				"healthier.enableGlobally": {
 					"scope": "resource",
 					"type": "boolean",
 					"default": false,
-					"description": "Controls whether JavaScript Healthier Style is enabled globally for JavaScript files or not."
+					"description": "Controls whether Healthier is enabled globally for JavaScript files or not."
+				},
+        "healthier.usePackageJson": {
+					"type": "boolean",
+					"default": true,
+					"description": "Activate Healthier based on project's package.json settings, use globally installed healthier module if set to \"false\""
 				},
 				"healthier.nodePath": {
 					"scope": "resource",
@@ -66,7 +71,7 @@
 					"scope": "resource",
 					"type": "object",
 					"default": {},
-					"description": "The healthier options object to provide args normally passed to JavaScript Healthier Style when executed from a command line."
+					"description": "The healthier options object to provide args normally passed to Healthier when executed from a command line."
 				},
 				"healthier.engine": {
 					"scope": "resource",
@@ -87,7 +92,7 @@
 						"verbose"
 					],
 					"default": "off",
-					"description": "Traces the communication between VSCode and the JavaScript Healthier Style linter service."
+					"description": "Traces the communication between VSCode and the Healthier linter service."
 				},
 				"healthier.run": {
 					"scope": "resource",
@@ -136,7 +141,7 @@
 								"properties": {
 									"language": {
 										"type": "string",
-										"description": "The language id to be validated by JavaScript Healthier Style"
+										"description": "The language id to be validated by Healthier"
 									}
 								}
 							}
@@ -148,12 +153,7 @@
 						"typescript",
 						"typescriptreact"
 					],
-					"description": "An array of language ids which should be validated by JavaScript Healthier Style"
-				},
-				"healthier.usePackageJson": {
-					"type": "boolean",
-					"default": true,
-					"description": "Activate JavaScript Healthier Style based on project's package.json settings, use globally installed healthier module if set to \"false\""
+					"description": "An array of language ids which should be validated by Healthier"
 				},
 				"healthier.treatErrorsAsWarnings": {
 					"type": "boolean",
@@ -164,18 +164,18 @@
 		},
 		"commands": [
 			{
-				"title": "Enable JavaScript Healthier Style for this Workspace",
-				"category": "JavaScript Healthier Style",
+				"title": "Enable Healthier for this Workspace",
+				"category": "Healthier",
 				"command": "healthier.enable"
 			},
 			{
-				"title": "Disable JavaScript Healthier Style for this Workspace",
-				"category": "JavaScript Healthier Style",
+				"title": "Disable Healthier for this Workspace",
+				"category": "Healthier",
 				"command": "healthier.disable"
 			},
 			{
 				"title": "Show Output Channel",
-				"category": "JavaScript Healthier Style",
+				"category": "Healthier",
 				"command": "healthier.showOutputChannel"
 			}
 		],

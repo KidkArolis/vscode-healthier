@@ -39,8 +39,8 @@ import * as ValidateNotification from './utils/ValidateNotification'
 
 type LinterValues = 'healthier' | 'ts-healthier'
 type LinterNameValues =
-  | 'JavaScript Healthier Style'
-  | 'TypeScript Healthier Style'
+  | 'Healthier'
+  | 'Healthier TypeScript'
 
 interface HealthierError extends Error {
   messageTemplate?: string
@@ -273,8 +273,8 @@ async function resolveSettings (
     .then(async (settings: TextDocumentSettings) => {
       const uri = URI.parse(document.uri)
       const linterNames: { [linter: string]: LinterNameValues } = {
-        healthier: 'JavaScript Healthier Style',
-        'ts-healthier': 'TypeScript Healthier Style'
+        healthier: 'Healthier',
+        'ts-healthier': 'Healthier TypeScript'
       }
       let linter = settings.engine
       let linterName = linterNames[settings.engine]
@@ -298,10 +298,10 @@ async function resolveSettings (
           const pkg = JSON.parse(pkgStr)
           if (pkg?.devDependencies?.healthier != null) {
             linter = 'healthier'
-            linterName = 'JavaScript Healthier Style'
+            linterName = 'Healthier'
           } else if (pkg?.devDependencies?.['ts-healthier'] != null) {
             linter = 'ts-healthier'
-            linterName = 'TypeScript Healthier Style'
+            linterName = 'Healthier TypeScript'
           }
           // if healthier, ts-healthier config presented in package.json
           if (
@@ -1005,9 +1005,9 @@ function tryHandleMissingModule (
             `${error.message.toString()}`,
             `Happend while validating ${fsPath ?? document.uri}`,
             'This can happen for a couple of reasons:',
-            '1. The plugin name is spelled incorrectly in JavaScript Healthier Style configuration.',
-            `2. If JavaScript Healthier Style is installed globally, then make sure ${module} is installed globally as well.`,
-            `3. If JavaScript Healthier Style is installed locally, then ${module} isn't installed correctly.`
+            '1. The plugin name is spelled incorrectly in Healthier configuration.',
+            `2. If Healthier is installed globally, then make sure ${module} is installed globally as well.`,
+            `3. If Healthier is installed locally, then ${module} isn't installed correctly.`
           ].join('\n')
         )
       } else {

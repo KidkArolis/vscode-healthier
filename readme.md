@@ -24,9 +24,9 @@ This extension contributes the following variables to the settings.
 - `healthier.enableGlobally`: Controls whether Healthier is enabled globally for JavaScript files or not.
 - `healthier.usePackageJson`: Activate Healthier based on project's package.json settings, use globally installed healthier module if set to `false`.
 - `healthier.nodePath` - A path added to NODE_PATH when resolving the healthier module.
-- `healthier.options` - The healthier options object to provide args normally passed to JavaScript Healthier Style when executed from a command line.
+- `healthier.options` - The healthier options object to provide args normally passed to Healthier when executed from a command line.
 - `healthier.engine` - Controls whether VSCode should use an alternate Healthier engine, like ts-healthier. (Note: To be implemented).
-- `healthier.trace.server` - Traces the communication between VSCode and the JavaScript Healthier Style linter service.
+- `healthier.trace.server` - Traces the communication between VSCode and the Healthier linter service.
 - `healthier.run` - run the linter `onSave` or `onType`, default is `onType`.
 - `healthier.workingDirectories` - The working directory to use if a file's path start with this directory.
 - `healthier.validate` - an array of language identifiers specify the files to be validated. Something like `"healthier.validate": [ "javascript", "javascriptreact", "html", "typescript" ]`. Defaults to `["javascript", "javascriptreact"]`.

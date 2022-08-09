@@ -43,8 +43,8 @@ import { linterValues } from './linterValues'
 
 type LinterValues = typeof linterValues[number]
 type LinterNameValues =
-  | 'JavaScript Healthier Style'
-  | 'TypeScript Healthier Style'
+  | 'Healthier'
+  | 'Healthier TypeScript'
 let linterName: LinterNameValues
 
 type RunValues = 'onType' | 'onSave'
@@ -75,8 +75,8 @@ interface WorkspaceFolderItem extends QuickPickItem {
 function getLinterName (): LinterNameValues {
   const configuration = Workspace.getConfiguration('healthier')
   const linterNames: { [linter: string]: LinterNameValues } = {
-    healthier: 'JavaScript Healthier Style',
-    'ts-healthier': 'TypeScript Healthier Style'
+    healthier: 'Healthier',
+    'ts-healthier': 'Healthier TypeScript'
   }
   return linterNames[configuration.get<LinterValues>('engine', 'healthier')]
 }
@@ -675,7 +675,7 @@ export function realActivate (context: ExtensionContext): void {
               `To use ${linterName} please install ${linterName} by running 'npm install ${linter}' in the workspace folder ${workspaceFolder.name}`,
               `or globally using 'npm install -g ${linter}'. You need to reopen the workspace after installing ${linterName}.`,
               '',
-              `Alternatively you can disable ${linterName} for the workspace folder ${workspaceFolder.name} by executing the 'Disable JavaScript Healthier Style' command.`
+              `Alternatively you can disable ${linterName} for the workspace folder ${workspaceFolder.name} by executing the 'Disable Healthier' command.`
             ].join('\n')
           )
           if (state.workspaces == null) {
