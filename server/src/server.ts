@@ -656,8 +656,7 @@ connection.onInitialize(_params => {
         save: {
           includeText: false
         }
-      },
-      codeActionProvider: true
+      }
     }
   }
 })
