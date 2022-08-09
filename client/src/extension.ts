@@ -54,8 +54,6 @@ type RunValues = 'onType' | 'onSave'
 
 interface TextDocumentSettings {
   validate: boolean
-  autoFix: boolean
-  autoFixOnSave: boolean
   engine: LinterValues
   usePackageJson: boolean
   options: any | undefined
@@ -287,7 +285,6 @@ export async function activate (context: ExtensionContext): Promise<void> {
     )
   }
   dummyCommands = [
-    Commands.registerCommand('healthier.executeAutofix', notValidating),
     Commands.registerCommand('healthier.showOutputChannel', notValidating)
   ]
 
@@ -416,10 +413,6 @@ export function realActivate (context: ExtensionContext): void {
       const configuration = Workspace.getConfiguration('healthier')
       const folders = Workspace.workspaceFolders
       return {
-        legacyModuleResolve:
-          configuration != null
-            ? configuration.get('_legacyModuleResolve', false)
-            : false,
         nodePath:
           configuration != null
             ? configuration.get('nodePath', undefined)
@@ -531,8 +524,6 @@ export function realActivate (context: ExtensionContext): void {
             const config = Workspace.getConfiguration('healthier', resource)
             const settings: TextDocumentSettings = {
               validate: false,
-              autoFix: false,
-              autoFixOnSave: false,
               engine: config.get('engine', 'healthier'),
               usePackageJson: config.get('usePackageJson', false),
               options: config.get('options', {}),
@@ -555,23 +546,15 @@ export function realActivate (context: ExtensionContext): void {
               for (const item of validateItems) {
                 if (Is.string(item) && item === document.languageId) {
                   settings.validate = true
-                  if (defaultLanguages.includes(item)) {
-                    settings.autoFix = true
-                  }
                   break
                 } else if (
                   ValidateItem.is(item) &&
                   item.language === document.languageId
                 ) {
                   settings.validate = true
-                  settings.autoFix = item.autoFix ?? false
                   break
                 }
               }
-            }
-            if (settings.validate) {
-              settings.autoFixOnSave =
-                settings.autoFix && config.get('autoFixOnSave', false)
             }
             const workspaceFolder = Workspace.getWorkspaceFolder(resource)
             if (workspaceFolder != null) {
@@ -733,27 +716,6 @@ export function realActivate (context: ExtensionContext): void {
     dummyCommands = null
   }
   context.subscriptions.push(
-    Commands.registerCommand('healthier.executeAutofix', () => {
-      const textEditor = Window.activeTextEditor
-      if (textEditor == null) {
-        return undefined
-      }
-      const textDocument: VersionedTextDocumentIdentifier = {
-        uri: textEditor.document.uri.toString(),
-        version: textEditor.document.version
-      }
-      const params: ExecuteCommandParams = {
-        command: 'healthier.applyAutoFix',
-        arguments: [textDocument]
-      }
-      client
-        .sendRequest(ExecuteCommandRequest.type, params)
-        .then(undefined, async () => {
-          await Window.showErrorMessage(
-            `Failed to apply ${linterName} fixes to the document. Please consider opening an issue with steps to reproduce.`
-          )
-        })
-    }),
     Commands.registerCommand('healthier.showOutputChannel', () => {
       client.outputChannel.show()
     }),

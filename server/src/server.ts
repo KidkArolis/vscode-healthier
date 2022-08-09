@@ -3,16 +3,12 @@ import * as deglob from 'deglob'
 import * as fs from 'fs'
 import * as path from 'path'
 import {
-  CodeActionRequest,
-  Command,
   createConnection,
   Diagnostic,
   DiagnosticSeverity,
   DidChangeConfigurationNotification,
-  DidChangeWatchedFilesNotification,
   DidChangeWorkspaceFoldersNotification,
   ErrorCodes,
-  ExecuteCommandRequest,
   Files,
   Connection,
   IPCMessageReader,
@@ -20,24 +16,18 @@ import {
   NotificationHandler,
   NotificationType,
   ProposedFeatures,
-  Range,
   RequestHandler,
   RequestType,
   ResponseError,
   TextDocuments,
-  TextDocumentSaveReason,
   TextDocumentSyncKind,
-  TextEdit,
-  VersionedTextDocumentIdentifier
 } from 'vscode-languageserver/node'
 import {
-  CancellationToken,
-  WorkspaceChange
+  CancellationToken
 } from 'vscode-languageserver-protocol'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 import { URI } from 'vscode-uri'
 
-import * as CommandIds from './utils/CommandIds'
 import * as DirectoryItem from './utils/DirectoryItem'
 import * as Is from './utils/Is'
 import * as NoConfigRequest from './utils/NoConfigRequest'
@@ -63,8 +53,6 @@ type RunValues = 'onType' | 'onSave'
 
 interface TextDocumentSettings {
   validate: boolean
-  autoFix: boolean
-  autoFixOnSave: boolean
   engine: LinterValues
   usePackageJson: boolean
   options: any | undefined
@@ -76,11 +64,6 @@ interface TextDocumentSettings {
   treatErrorsAsWarnings: boolean
 }
 
-interface HealthierAutoFixEdit {
-  range: [number, number]
-  text: string
-}
-
 interface HealthierProblem {
   line: number
   column: number
@@ -89,7 +72,6 @@ interface HealthierProblem {
   severity: number
   ruleId?: string
   message: string
-  fix?: HealthierAutoFixEdit
 }
 
 interface HealthierDocumentReport {
@@ -108,7 +90,6 @@ interface HealthierReport {
 
 interface CLIOptions {
   cwd: string
-  fix: boolean
   ignore: string[]
   globals: string[]
   plugins: string[]
@@ -170,44 +151,11 @@ function makeDiagnostic (
   }
 }
 
-interface AutoFix {
-  label: string
-  documentVersion: number
-  ruleId: string
-  edit: HealthierAutoFixEdit
-}
-
 function computeKey (diagnostic: Diagnostic): string {
   const range = diagnostic.range
   return `[${range.start.line},${range.start.character},${range.end.line},${
     range.end.character
   }]-${diagnostic.code as string | number}`
-}
-
-const codeActions: Map<string, Map<string, AutoFix>> = new Map<
-string,
-Map<string, AutoFix>
->()
-function recordCodeAction (
-  document: TextDocument,
-  diagnostic: Diagnostic,
-  problem: HealthierProblem
-): void {
-  if (problem.fix == null || problem.ruleId == null) {
-    return undefined
-  }
-  const uri = document.uri
-  let edits = codeActions.get(uri)
-  if (edits == null) {
-    edits = new Map<string, AutoFix>()
-    codeActions.set(uri, edits)
-  }
-  edits.set(computeKey(diagnostic), {
-    label: `Fix this ${problem.ruleId} problem`,
-    documentVersion: document.version,
-    ruleId: problem.ruleId,
-    edit: problem.fix
-  })
 }
 
 function convertSeverity (severity: number): DiagnosticSeverity {
@@ -667,51 +615,6 @@ documents.onDidChangeContent(async event => {
   )
 })
 
-function getFixes (textDocument: TextDocument): TextEdit[] {
-  const uri = textDocument.uri
-  const edits = codeActions.get(uri)
-  function createTextEdit (editInfo: AutoFix): TextEdit {
-    return TextEdit.replace(
-      Range.create(
-        textDocument.positionAt(editInfo.edit.range[0]),
-        textDocument.positionAt(editInfo.edit.range[1])
-      ),
-      editInfo.edit.text ?? ''
-    )
-  }
-  if (edits != null) {
-    const fixes = new Fixes(edits)
-    if (
-      fixes.isEmpty() ||
-      textDocument.version !== fixes.getDocumentVersion()
-    ) {
-      return []
-    }
-    return fixes.getOverlapFree().map(createTextEdit)
-  }
-  return []
-}
-
-documents.onWillSaveWaitUntil(event => {
-  if (event.reason === TextDocumentSaveReason.AfterDelay) {
-    return []
-  }
-
-  const document = event.document
-  return resolveSettings(document).then(settings => {
-    if (!settings.autoFixOnSave) {
-      return []
-    }
-    // If we validate on save and want to apply fixes on will save, we need to validate the file.
-    if (settings.run === 'onSave') {
-      // Do not queue this since we want to get the fixes as fast as possible.
-      return validateSingle(document, false).then(() => getFixes(document))
-    } else {
-      return getFixes(document)
-    }
-  })
-})
-
 // A text document has been saved. Validate the document according the run setting.
 documents.onDidSave(async event => {
   const settings = await resolveSettings(event.document)
@@ -729,7 +632,6 @@ documents.onDidClose(async (event) => {
   const settings = await resolveSettings(event.document)
   const uri = event.document.uri
   document2Settings.delete(uri)
-  codeActions.delete(uri)
   if (settings.validate) {
     await connection.sendDiagnostics({ uri: uri, diagnostics: [] })
   }
@@ -762,15 +664,7 @@ connection.onInitialize(_params => {
           includeText: false
         }
       },
-      codeActionProvider: true,
-      executeCommandProvider: {
-        commands: [
-          CommandIds.applySingleFix,
-          CommandIds.applySameFixes,
-          CommandIds.applyAllFixes,
-          CommandIds.applyAutoFix
-        ]
-      }
+      codeActionProvider: true
     }
   }
 })
@@ -936,11 +830,6 @@ function validate (
     async.waterfall(
       [
         function (next: (err?: any) => void) {
-          // Clean previously computed code actions.
-          codeActions.delete(uri)
-          next(null)
-        },
-        function (next: (err?: any) => void) {
           if (typeof file === 'undefined') {
             return next(null)
           }
@@ -998,9 +887,6 @@ function validate (
                   if (problem != null) {
                     const diagnostic = makeDiagnostic(problem, settings)
                     diagnostics.push(diagnostic)
-                    if (settings.autoFix) {
-                      recordCodeAction(document, diagnostic, problem)
-                    }
                   }
                 })
               }
@@ -1171,286 +1057,5 @@ function showErrorMessage (
   connection.window.showErrorMessage(getMessage(error, document))
   return StatusNotification.Status.error
 }
-
-messageQueue.registerNotification(
-  DidChangeWatchedFilesNotification.type,
-  (async (params: any) => {
-    // A .eslintrc has change. No smartness here. Simply revalidate all files.
-    noConfigReported = Object.create(null)
-    missingModuleReported = Object.create(null)
-    for (const change of params.changes) {
-      const fsPath = getFilePath(change.uri)
-      if (fsPath.length === 0 || isUNC(fsPath)) {
-        return undefined
-      }
-      const dirname = path.dirname(fsPath)
-      if (dirname.length > 0) {
-        const library = configErrorReported.get(fsPath)
-        if (library != null) {
-          try {
-            await library.lintText('')
-            configErrorReported.delete(fsPath)
-          } catch (error) {}
-        }
-      }
-    }
-    validateMany(documents.all())
-  }) as unknown as () => void
-)
-
-class Fixes {
-  constructor (private readonly edits: Map<string, AutoFix>) {}
-
-  public static overlaps (lastEdit: AutoFix, newEdit: AutoFix): boolean {
-    return lastEdit != null && lastEdit.edit.range[1] > newEdit.edit.range[0]
-  }
-
-  public isEmpty (): boolean {
-    return this.edits.size === 0
-  }
-
-  public getDocumentVersion (): number {
-    if (this.isEmpty()) {
-      throw new Error('No edits recorded.')
-    }
-    return this.edits.values().next().value.documentVersion
-  }
-
-  public getScoped (diagnostics: Diagnostic[]): AutoFix[] {
-    const result: AutoFix[] = []
-    for (const diagnostic of diagnostics) {
-      const key = computeKey(diagnostic)
-      const editInfo = this.edits.get(key)
-      if (editInfo != null) {
-        result.push(editInfo)
-      }
-    }
-    return result
-  }
-
-  public getAllSorted (): AutoFix[] {
-    const result: AutoFix[] = []
-    this.edits.forEach(value => result.push(value))
-    return result.sort((a, b) => {
-      const d = a.edit.range[0] - b.edit.range[0]
-      if (d !== 0) {
-        return d
-      }
-      if (a.edit.range[1] === 0) {
-        return -1
-      }
-      if (b.edit.range[1] === 0) {
-        return 1
-      }
-      return a.edit.range[1] - b.edit.range[1]
-    })
-  }
-
-  public getOverlapFree (): AutoFix[] {
-    const sorted = this.getAllSorted()
-    if (sorted.length <= 1) {
-      return sorted
-    }
-    const result: AutoFix[] = []
-    let last: AutoFix = sorted[0]
-    result.push(last)
-    for (let i = 1; i < sorted.length; i++) {
-      const current = sorted[i]
-      if (!Fixes.overlaps(last, current)) {
-        result.push(current)
-        last = current
-      }
-    }
-    return result
-  }
-}
-
-let commands: Map<string, WorkspaceChange>
-messageQueue.registerRequest(
-  CodeActionRequest.type,
-  params => {
-    commands = new Map<string, WorkspaceChange>()
-    const result: Command[] = []
-    const uri = params.textDocument.uri
-    const edits = codeActions.get(uri)
-    if (edits == null) {
-      return result
-    }
-
-    const fixes = new Fixes(edits)
-    if (fixes.isEmpty()) {
-      return result
-    }
-
-    const textDocument = documents.get(uri)
-    let documentVersion: number = -1
-    let ruleId: string | null = null
-
-    function createTextEdit (editInfo: AutoFix): TextEdit | undefined {
-      if (textDocument == null) {
-        return undefined
-      }
-      return TextEdit.replace(
-        Range.create(
-          textDocument.positionAt(editInfo.edit.range[0]),
-          textDocument.positionAt(editInfo.edit.range[1])
-        ),
-        editInfo.edit.text ?? ''
-      )
-    }
-
-    function getLastEdit (array: AutoFix[]): AutoFix {
-      return array[array.length - 1]
-    }
-
-    for (const editInfo of fixes.getScoped(params.context.diagnostics)) {
-      documentVersion = editInfo.documentVersion
-      ruleId = editInfo.ruleId
-      const workspaceChange = new WorkspaceChange()
-      if (editInfo != null) {
-        workspaceChange
-          .getTextEditChange({ uri, version: documentVersion })
-          .add(createTextEdit(editInfo) as TextEdit)
-        commands.set(CommandIds.applySingleFix, workspaceChange)
-        result.push(Command.create(editInfo.label, CommandIds.applySingleFix))
-      }
-    }
-
-    if (result.length > 0) {
-      const same: AutoFix[] = []
-      const all: AutoFix[] = []
-
-      for (const editInfo of fixes.getAllSorted()) {
-        if (documentVersion === -1) {
-          documentVersion = editInfo.documentVersion
-        }
-        if (
-          ruleId != null &&
-          editInfo.ruleId === ruleId &&
-          !Fixes.overlaps(getLastEdit(same), editInfo)
-        ) {
-          same.push(editInfo)
-        }
-        if (!Fixes.overlaps(getLastEdit(all), editInfo)) {
-          all.push(editInfo)
-        }
-      }
-      if (same.length > 1) {
-        const sameFixes: WorkspaceChange = new WorkspaceChange()
-        const sameTextChange = sameFixes.getTextEditChange({
-          uri,
-          version: documentVersion
-        })
-        same
-          .map(createTextEdit)
-          .forEach(edit => sameTextChange.add(edit as TextEdit))
-        commands.set(CommandIds.applySameFixes, sameFixes)
-        result.push(
-          Command.create(
-            `Fix all ${ruleId as string} problems`,
-            CommandIds.applySameFixes
-          )
-        )
-      }
-      if (all.length > 1) {
-        const allFixes: WorkspaceChange = new WorkspaceChange()
-        const allTextChange = allFixes.getTextEditChange({
-          uri,
-          version: documentVersion
-        })
-        all
-          .map(createTextEdit)
-          .forEach(edit => allTextChange.add(edit as TextEdit))
-        commands.set(CommandIds.applyAllFixes, allFixes)
-        result.push(
-          Command.create(
-            'Fix all auto-fixable problems',
-            CommandIds.applyAllFixes
-          )
-        )
-      }
-    }
-    return result
-  },
-  params => {
-    const document = documents.get(params.textDocument.uri)
-    return document != null ? document.version : 1
-  }
-)
-
-function computeAllFixes (
-  identifier: VersionedTextDocumentIdentifier
-): Array<TextEdit | undefined> | undefined {
-  const uri = identifier.uri
-  const textDocument = documents.get(uri)
-  if (textDocument == null || identifier.version !== textDocument.version) {
-    return undefined
-  }
-  const edits = codeActions.get(uri)
-
-  if (edits != null) {
-    const fixes = new Fixes(edits)
-    if (!fixes.isEmpty()) {
-      return fixes.getOverlapFree().map(editInfo => {
-        if (textDocument == null) {
-          return undefined
-        }
-        return TextEdit.replace(
-          Range.create(
-            textDocument.positionAt(editInfo.edit.range[0]),
-            textDocument.positionAt(editInfo.edit.range[1])
-          ),
-          editInfo.edit.text ?? ''
-        )
-      })
-    }
-  }
-  return undefined
-}
-
-messageQueue.registerRequest(
-  ExecuteCommandRequest.type,
-  params => {
-    let workspaceChange = new WorkspaceChange()
-    if (params.command === CommandIds.applyAutoFix) {
-      const identifier: VersionedTextDocumentIdentifier = params.arguments[0]
-      const edits = computeAllFixes(identifier)
-      if (edits != null) {
-        workspaceChange = new WorkspaceChange()
-        const textChange = workspaceChange.getTextEditChange(identifier)
-        edits.forEach(edit => textChange.add(edit as TextEdit))
-      }
-    } else {
-      workspaceChange = commands.get(params.command) as WorkspaceChange
-    }
-
-    if (workspaceChange == null) {
-      return {}
-    }
-    return connection.workspace.applyEdit(workspaceChange.edit).then(
-      response => {
-        if (!response.applied) {
-          connection.console.error(
-            `Failed to apply command: ${params.command as string}`
-          )
-        }
-        return {}
-      },
-      () => {
-        connection.console.error(
-          `Failed to apply command: ${params.command as string}`
-        )
-      }
-    )
-  },
-  params => {
-    if (params.command === CommandIds.applyAutoFix) {
-      if (params.arguments != null) {
-        return params?.arguments[0].version
-      }
-      return 1
-    }
-  }
-)
 
 connection.listen()

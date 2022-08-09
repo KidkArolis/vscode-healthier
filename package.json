@@ -62,12 +62,6 @@
 					"default": null,
 					"description": "A path added to NODE_PATH when resolving the healthier module."
 				},
-				"healthier._legacyModuleResolve": {
-					"scope": "resource",
-					"type": "boolean",
-					"default": false,
-					"description": "Uses the legacy module resolving."
-				},
 				"healthier.options": {
 					"scope": "resource",
 					"type": "object",
@@ -104,12 +98,6 @@
 					],
 					"default": "onType",
 					"description": "Run the linter on save (onSave) or on type (onType)"
-				},
-				"healthier.autoFixOnSave": {
-					"scope": "resource",
-					"type": "boolean",
-					"default": false,
-					"description": "Turns auto fix on save on or off."
 				},
 				"healthier.workingDirectories": {
 					"scope": "resource",
@@ -149,10 +137,6 @@
 									"language": {
 										"type": "string",
 										"description": "The language id to be validated by JavaScript Healthier Style"
-									},
-									"autoFix": {
-										"type": "boolean",
-										"description": "Whether auto fixes are provided for the language"
 									}
 								}
 							}
@@ -179,11 +163,6 @@
 			}
 		},
 		"commands": [
-			{
-				"title": "Fix all auto-fixable Problems",
-				"category": "JavaScript Healthier Style",
-				"command": "healthier.executeAutofix"
-			},
 			{
 				"title": "Enable JavaScript Healthier Style for this Workspace",
 				"category": "JavaScript Healthier Style",
@@ -217,6 +196,9 @@
 		"lint": "cd client && npm run lint && cd ../server && npm run lint && cd ..",
 		"format": "cd client && npm run format && cd ../server && npm run format && cd .."
 	},
+  "dependencies": {
+		"async": "^3.2.4"
+	},
 	"devDependencies": {
 		"@types/mocha": "^9.1.1",
 		"@types/node": "^18.6.1",
@@ -226,9 +208,6 @@
 		"ts-standard": "^11.0.0",
 		"typescript": "^4.7.4",
 		"vsce": "^2.10.0"
-	},
-	"dependencies": {
-		"async": "^3.2.4"
 	},
 	"__metadata": {
 		"id": "af00723d-248e-47a2-99ed-11aa0b6abc17",
