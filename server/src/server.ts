@@ -960,13 +960,12 @@ function validate (
         function (callback: any) {
           if (settings.library != null) {
             if (!isLegacyModule(settings.library)) {
-              console.log(newOptions)
-              // settings.library.lintText(content, newOptions)
-              //   .then(report => callback(null, report))
-              //   .catch(error => {
-              //     tryHandleMissingModule(error, document, settings.library)
-              //     callback(error)
-              //   })
+              settings.library.lintText(content, newOptions)
+                .then(report => callback(null, report))
+                .catch(error => {
+                  tryHandleMissingModule(error, document, settings.library)
+                  callback(error)
+                })
               return
             }
 
