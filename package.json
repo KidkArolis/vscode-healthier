@@ -1,7 +1,7 @@
 {
 	"name": "vscode-healthier",
 	"displayName": "Healthier Linter",
-	"description": "Healthier is an opinionated style agnostic code linter – a friendly companion to Prettier",
+	"description": "An opinionated code style agnostic linter – a friendly companion to Prettier.",
 	"version": "3.0.0",
 	"license": "MIT",
 	"repository": {
@@ -19,14 +19,18 @@
 	"publisher": "KidkArolis",
 	"icon": "icon.png",
 	"categories": [
-		"Programming Languages",
 		"Linters"
 	],
 	"keywords": [
-		"multi-root ready"
+		"javascript",
+		"javascriptreact",
+		"typescript",
+		"typescriptreact",
+		"vue"
 	],
 	"engines": {
-		"vscode": "^1.30.0"
+		"vscode": "^1.69.0",
+		"npm": ">=7.0.0"
 	},
 	"activationEvents": [
 		"*"
@@ -41,45 +45,54 @@
 					"scope": "resource",
 					"type": "boolean",
 					"default": true,
-					"description": "Controls whether healthier is enabled for JavaScript files or not."
+					"description": "Controls whether Healthier is enabled for JavaScript files or not."
+				},
+				"healthier.enableGlobally": {
+					"scope": "resource",
+					"type": "boolean",
+					"default": false,
+					"description": "Controls whether Healthier is enabled globally for JavaScript files or not."
+				},
+        "healthier.usePackageJson": {
+					"type": "boolean",
+					"default": true,
+					"description": "Activate Healthier based on project's package.json settings, use globally installed healthier module if set to \"false\""
+				},
+				"healthier.nodePath": {
+					"scope": "resource",
+					"type": [
+						"string",
+						"null"
+					],
+					"default": null,
+					"description": "A path added to NODE_PATH when resolving the healthier module."
+				},
+				"healthier.options": {
+					"scope": "resource",
+					"type": "object",
+					"default": {},
+					"description": "The healthier options object to provide args normally passed to Healthier when executed from a command line."
+				},
+				"healthier.engine": {
+					"scope": "resource",
+					"type": "string",
+					"enum": [
+						"healthier",
+						"ts-healthier"
+					],
+					"default": "healthier",
+					"description": "Controls whether VSCode should use an alternate Healthier engine, like ts-healthier."
 				},
 				"healthier.trace.server": {
 					"scope": "window",
-					"anyOf": [
-						{
-							"type": "string",
-							"enum": [
-								"off",
-								"messages",
-								"verbose"
-							],
-							"default": "off"
-						},
-						{
-							"type": "object",
-							"properties": {
-								"verbosity": {
-									"type": "string",
-									"enum": [
-										"off",
-										"messages",
-										"verbose"
-									],
-									"default": "off"
-								},
-								"format": {
-									"type": "string",
-									"enum": [
-										"text",
-										"json"
-									],
-									"default": "text"
-								}
-							}
-						}
+					"type": "string",
+					"enum": [
+						"off",
+						"messages",
+						"verbose"
 					],
 					"default": "off",
-					"description": "Traces the communication between VSCode and the healthier linter service."
+					"description": "Traces the communication between VSCode and the Healthier linter service."
 				},
 				"healthier.run": {
 					"scope": "resource",
@@ -90,6 +103,30 @@
 					],
 					"default": "onType",
 					"description": "Run the linter on save (onSave) or on type (onType)"
+				},
+				"healthier.workingDirectories": {
+					"scope": "resource",
+					"type": "array",
+					"items": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "object",
+								"properties": {
+									"directory": {
+										"type": "string",
+										"description": "The working directory to use if a file's path start with this directory."
+									},
+									"changeProcessCWD": {
+										"type": "boolean",
+										"description": "Whether the process's cwd should be changed as well."
+									}
+								}
+							}
+						]
+					}
 				},
 				"healthier.validate": {
 					"scope": "resource",
@@ -105,10 +142,6 @@
 									"language": {
 										"type": "string",
 										"description": "The language id to be validated by Healthier"
-									},
-									"autoFix": {
-										"type": "boolean",
-										"description": "Whether auto fixes are provided for the language"
 									}
 								}
 							}
@@ -116,35 +149,27 @@
 					},
 					"default": [
 						"javascript",
-						"javascriptreact"
+						"javascriptreact",
+						"typescript",
+						"typescriptreact"
 					],
 					"description": "An array of language ids which should be validated by Healthier"
 				},
-				"healthier.provideLintTask": {
-					"scope": "resource",
+				"healthier.treatErrorsAsWarnings": {
 					"type": "boolean",
 					"default": false,
-					"description": "Controls whether a task for linting the whole workspace will be available."
-				},
-				"healthier.runtime": {
-					"scope": "window",
-					"type": [
-						"string",
-						"null"
-					],
-					"default": null,
-					"description": "The location of the node binary to run Healthier under."
+					"description": "Any linting error reported by Healthier will instead be displayed as a warning within VS Code."
 				}
 			}
 		},
 		"commands": [
 			{
-				"title": "Enable Healthier",
+				"title": "Enable Healthier for this Workspace",
 				"category": "Healthier",
 				"command": "healthier.enable"
 			},
 			{
-				"title": "Disable Healthier",
+				"title": "Disable Healthier for this Workspace",
 				"category": "Healthier",
 				"command": "healthier.disable"
 			},
@@ -156,35 +181,38 @@
 		],
 		"jsonValidation": [
 			{
-				"fileMatch": ".eslintrc",
-				"url": "http://json.schemastore.org/eslintrc"
-			},
-			{
-				"fileMatch": ".eslintrc.json",
-				"url": "http://json.schemastore.org/eslintrc"
-			}
-		],
-		"languages": [
-			{
-				"id": "ignore",
-				"filenames": [
-					".eslintignore"
-				]
+				"fileMatch": "package.json",
+				"url": "http://json.schemastore.org/package"
 			}
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "cd client && npm run update-vscode && cd .. && npm run compile",
+		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -b",
-		"compile:client": "tsc -b ./client/tsconfig.json",
-		"compile:server": "tsc -b ./server/tsconfig.json",
 		"watch": "tsc -b -w",
-		"clean": "tsc -b --clean",
-		"postinstall": "cd client && npm install && cd ../server && npm install && cd .."
+		"test": "npm run compile && sh ./scripts/e2e.sh",
+		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
+		"package": "vsce package",
+		"lint": "cd client && npm run lint && cd ../server && npm run lint && cd ..",
+		"format": "cd client && npm run format && cd ../server && npm run format && cd .."
+	},
+  "dependencies": {
+		"async": "^3.2.4"
 	},
 	"devDependencies": {
-		"typescript": "^3.2.4",
-		"@types/node": "^8.0.0",
-		"tslint": "^5.11.0"
+		"@types/mocha": "^9.1.1",
+		"@types/node": "^18.6.1",
+		"@vscode/test-electron": "^2.1.5",
+		"mocha": "^10.0.0",
+		"snazzy": "^9.0.0",
+		"ts-standard": "^11.0.0",
+		"typescript": "^4.7.4",
+		"vsce": "^2.10.0"
+	},
+	"__metadata": {
+		"id": "af00723d-248e-47a2-99ed-11aa0b6abc17",
+		"publisherDisplayName": "KidkArolis",
+		"publisherId": "fbac0424-3d99-4f1f-a061-d5c4b060a0bf",
+		"isPreReleaseVersion": false
 	}
 }

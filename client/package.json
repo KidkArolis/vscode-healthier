@@ -12,16 +12,28 @@
 		"url": "https://github.com/KidkArolis/vscode-healthier/issues"
 	},
 	"engines": {
-		"vscode": "^1.30.0"
+		"vscode": "^1.69.0",
+		"npm": ">=7.0.0"
 	},
-	"scripts": {
-		"update-vscode": "node ./node_modules/vscode/bin/install",
-		"postinstall": "node ./node_modules/vscode/bin/install"
-	},
-	"devDependencies": {
-		"vscode": "^1.1.17"
-	},
-	"dependencies": {
-		"vscode-languageclient": "5.2.1"
-	}
+	"ts-standard": {
+    "files": [
+      "./src/**/*.ts"
+    ],
+    "envs": [
+      "node"
+    ]
+  },
+  "scripts": {
+    "lint": "ts-standard"
+  },
+  "devDependencies": {
+    "@types/glob": "^7.2.0",
+    "vscode-languageclient": "^8.0.2",
+    "vscode-nls": "^5.0.1"
+  },
+  "dependencies": {
+    "@types/vscode": "^1.69.0",
+    "ts-standard": "file:../node_modules/ts-standard",
+    "vscode-uri": "^3.0.3"
+  }
 }
