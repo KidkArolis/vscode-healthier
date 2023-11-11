@@ -33,7 +33,7 @@
 		"npm": ">=7.0.0"
 	},
 	"activationEvents": [
-		"*"
+		"onStartupFinished"
 	],
 	"main": "./client/out/extension",
 	"contributes": {
