@@ -2,7 +2,7 @@
 	"name": "vscode-healthier",
 	"displayName": "Healthier Linter",
 	"description": "An opinionated code style agnostic linter – a friendly companion to Prettier.",
-	"version": "4.0.0",
+	"version": "4.1.0",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
