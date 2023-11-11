@@ -92,10 +92,10 @@ function pickFolder (
       return {
         label: folder.name,
         description: folder.uri.fsPath,
-        folder: folder
+        folder
       }
     }),
-    { placeHolder: placeHolder }
+    { placeHolder }
   ).then((selected) => {
     if (selected == null) {
       return undefined

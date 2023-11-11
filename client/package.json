@@ -19,6 +19,10 @@
     "files": [
       "./src/**/*.ts"
     ],
+    "ignore": [
+      "out/**",
+      "testFixture/**"
+    ],
     "envs": [
       "node"
     ]
@@ -27,13 +31,13 @@
     "lint": "ts-standard"
   },
   "devDependencies": {
-    "@types/glob": "^7.2.0",
-    "vscode-languageclient": "^8.0.2",
-    "vscode-nls": "^5.0.1"
+    "@types/glob": "^8.1.0",
+    "vscode-languageclient": "^9.0.1",
+    "vscode-nls": "^5.2.0"
   },
   "dependencies": {
-    "@types/vscode": "^1.69.0",
+    "@types/vscode": "^1.84.1",
     "ts-standard": "file:../node_modules/ts-standard",
-    "vscode-uri": "^3.0.3"
+    "vscode-uri": "^3.0.8"
   }
 }

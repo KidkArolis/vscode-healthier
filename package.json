@@ -53,7 +53,7 @@
 					"default": false,
 					"description": "Controls whether Healthier is enabled globally for JavaScript files or not."
 				},
-        "healthier.usePackageJson": {
+				"healthier.usePackageJson": {
 					"type": "boolean",
 					"default": true,
 					"description": "Activate Healthier based on project's package.json settings, use globally installed healthier module if set to \"false\""
@@ -196,18 +196,18 @@
 		"lint": "cd client && npm run lint && cd ../server && npm run lint && cd ..",
 		"format": "cd client && npm run format && cd ../server && npm run format && cd .."
 	},
-  "dependencies": {
-		"async": "^3.2.4"
+	"dependencies": {
+		"async": "^3.2.5"
 	},
 	"devDependencies": {
-		"@types/mocha": "^9.1.1",
-		"@types/node": "^18.6.1",
-		"@vscode/test-electron": "^2.1.5",
-		"mocha": "^10.0.0",
+		"@types/mocha": "^10.0.4",
+		"@types/node": "^20.9.0",
+		"@vscode/test-electron": "^2.3.6",
+		"@vscode/vsce": "^2.22.0",
+		"mocha": "^10.2.0",
 		"snazzy": "^9.0.0",
-		"ts-standard": "^11.0.0",
-		"typescript": "^4.7.4",
-		"vsce": "^2.10.0"
+		"ts-standard": "^12.0.2",
+		"typescript": "^5.2.2"
 	},
 	"__metadata": {
 		"id": "af00723d-248e-47a2-99ed-11aa0b6abc17",
